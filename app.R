@@ -138,7 +138,7 @@ body <- dashboardBody(shinyDashboardThemes(theme = "blue_gradient"), # add blue_
                                   # Plot ----------------------------------------------
                                   fluidRow(
                                       tabBox(title = "City Wise calls: Status across NY",
-                                             width = 12,
+                                             width = 15,
                                              tabPanel("Complaints for City", plotlyOutput("plot_city"))
                                              #tabPanel("Inequity within charger distribution", plotlyOutput("plot_char")))
                                   ))
@@ -155,7 +155,7 @@ body <- dashboardBody(shinyDashboardThemes(theme = "blue_gradient"), # add blue_
                                   # Plot ----------------------------------------------
                                   fluidRow(
                                       tabBox(title = "Fueltype wise Total Vehicle Population",
-                                             width = 12,
+                                             width = 15,
                                              tabPanel("Yearly trend for vehicles", plotlyOutput("plot_dept"))
                                              #tabPanel("Fuel wise trend", plotlyOutput("plot_facet")))
                                   ))
@@ -212,9 +212,9 @@ server <- function(input, output) {
         
         complaint <- complaint[order(-complaint$count),]
         
-        top_complaint <- complaint[1:top_howmany,]
+        top_complaint <- complaint[1:input$topSelect,]
         
-        ggplot(top_complaint, aes(x =  complaint_type, y = count, fill = complaint_type ))+
+        ggplot(complaint[1:input$topSelect,], aes(x =  complaint_type, y = count, fill = complaint_type ))+
             geom_bar(postion= "dodge", stat="identity")+
             theme_bw()+
             theme(axis.text.x = element_text(angle = 60, hjust =1, vjust =1))+
