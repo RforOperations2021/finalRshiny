@@ -33,6 +33,14 @@ library(shinythemes)
 library(dashboardthemes)
 library(lubridate)
 
+library(rgdal)
+library(leaflet)
+library(leaflet.extras)
+
+library(dplyr)
+library(readxl)
+library(stringr)
+
 # Load and clean data ----------------------------------------------
 data_311 <- fromJSON("https://data.cityofnewyork.us/resource/erm2-nwe9.json")
 
@@ -80,9 +88,11 @@ sidebar <- dashboardSidebar(
         # Menu Items ----------------------------------------------
         menuItem("City wise calls", icon = icon("phone"), tabName = "city"),
         
-        menuItem("Department Wise Open Channels", icon = icon("car"), tabName = "deptchannel"),
+        menuItem("Department Wise Channels", icon = icon("car"), tabName = "deptchannel"),
         
         menuItem("DATA Table 311", icon = icon("table"), tabName = "table_311"), #badgeLabel = "new", badgeColor = "green"),
+        
+        menuItem("MAP", icon = icon("map"), tabName = "map"),
         
         br(), # break for better visibility
         
@@ -159,8 +169,25 @@ body <- dashboardBody(shinyDashboardThemes(theme = "blue_gradient"), # add blue_
                                              tabPanel("Yearly trend for vehicles", plotlyOutput("plot_dept"))
                                              #tabPanel("Fuel wise trend", plotlyOutput("plot_facet")))
                                   ))
-                          )
+                          ),
                           
+                          tabItem("map",
+                                  # Plot ----------------------------------------------
+                                  fluidRow(
+                                      tabBox(title = "Fueltype wise Total Vehicle Population",
+                                             width = 15,
+                                             tabPanel("Yearly trend for vehicles", leafletOutput("leaflet"))
+                                             #tabPanel("Fuel wise trend", plotlyOutput("plot_facet")))
+                                     
+                                         #     # Using Shiny JS
+                                         #     shinyjs::useShinyjs(),
+                                         #     # Style the background and change the page
+                                         #     tags$style(type = "text/css", ".leaflet {height: calc(100vh - 90px) !important;}
+                                         # body {background-color: #D4EFDF;}"),
+                                         #     # Map Output
+                                         #     leafletOutput("leaflet")
+                                             ))
+                          )
                           # ## tab items total sales
                           # tabItem("sale",
                           #         # Plot ----------------------------------------------
@@ -199,6 +226,14 @@ server <- function(input, output) {
     })
     
     
+    # Basic Map
+    output$leaflet <- renderLeaflet({
+        leaflet() %>%
+            addTiles(urlTemplate = "http://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", attribution = "Google", group = "Google") %>%
+            addProviderTiles("Stamen.Toner", group = "Toner") %>%
+            setView(-74.0060, 40.7128, 9) %>%
+            addLayersControl(baseGroups = c("Google", "Wiki"))
+    })
     
     # A plot showing the chargers with city for top selected -----------------------------
     output$plot_city <- renderPlotly({
