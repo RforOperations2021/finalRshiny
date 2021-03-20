@@ -51,6 +51,8 @@ data_311 <- data_311[,c("city", "park_borough", "latitude", "longitude", "create
 data_311$date <- as.Date(data_311$created_date)
 data_311$is.today <- today() - as.Date(data_311$created_date)
 data_311$year <- year(data_311$date)
+data_311$latitude <- as.numeric(data_311$latitude)
+data_311$longitude <- as.numeric(data_311$longitude)
 
 cities <- unique(data_311$city)
 agencies <- unique(data_311$agency_name)
@@ -230,10 +232,50 @@ server <- function(input, output) {
     output$leaflet <- renderLeaflet({
         leaflet() %>%
             addTiles(urlTemplate = "http://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", attribution = "Google", group = "Google") %>%
+            # addTiles(group = "OSM (default)") %>%
             addProviderTiles("Stamen.Toner", group = "Toner") %>%
+            addProviderTiles("Stamen.TonerLite", group = "Toner Lite") %>%
             setView(-74.0060, 40.7128, 9) %>%
-            addLayersControl(baseGroups = c("Google", "Wiki"))
+            # Layers control
+            addLayersControl(
+                baseGroups = c("OSM (default)", "Toner", "Toner Lite"),
+                options = layersControlOptions(collapsed = FALSE))
     })
+    
+
+    
+    # Green Infrastructure Filtered data
+
+    # Replace layer with filtered greenInfrastructure
+    observe({
+        city_data <- cityInput()
+        # Data is greenInf
+        new_Data <- city_data[!is.na(city_data$latitude) & !is.na(city_data$latitude),]
+        leafletProxy("leaflet", data = new_Data) %>%
+            addProviderTiles("CartoDB.DarkMatter") %>%
+            clearGroup(group = "new_Data") %>% 
+            addHeatmap(lng = ~longitude, lat = ~latitude, radius = 8) %>% 
+            setView(lng = new_Data$longitude[1], lat = new_Data$latitude[1], zoom = 25)
+        
+    })
+    
+    # # Borough Filter
+    # boroInputs <- reactive({
+    #     boros <- subset(boros.load, boro_name == input$boroSelect)
+    #     
+    #     return(boros)
+    # })
+    # 
+    # observe({
+    #     boros <- boroInputs()
+    #     
+    #     leafletProxy("leaflet", data = boros) %>%
+    #         # In this case either lines 107 or 108 will work
+    #         # clearShapes() %>%
+    #         clearGroup(group = "boros") %>%
+    #         addPolygons(popup = ~paste0("<b>", boro_name, "</b>"), group = "boros", layerId = ~boro_code, fill = FALSE, color = "green") %>%
+    #         setView(lng = boros$x[1], lat = boros$y[1], zoom = 9)
+    # })
     
     # A plot showing the chargers with city for top selected -----------------------------
     output$plot_city <- renderPlotly({
