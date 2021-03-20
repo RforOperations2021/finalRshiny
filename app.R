@@ -128,8 +128,8 @@ sidebar <- dashboardSidebar(
                     max = 25,
                     value = 5,
                     step = 1), 
-        checkboxInput("layer1", "Layer1", value = FALSE, width = NULL),
-        checkboxInput("layer2", "Layer2", value = FALSE, width = NULL),
+        checkboxInput("layer1", "Layer1- City wise calls (heatmap)", value = FALSE, width = NULL),
+        checkboxInput("layer2", "Layer2- Channel wise sum (markers) ", value = FALSE, width = NULL),
         
         br(),
         br(),
@@ -186,7 +186,7 @@ body <- dashboardBody(shinyDashboardThemes(theme = "blue_gradient"), # add blue_
                           tabItem("map",
                                   # Plot ----------------------------------------------
                                   fluidRow(
-                                      tabBox(title = "Heat Map for calls for selected City",
+                                      tabBox(title = "Layered Map for calls for selected City",
                                              width = 15,
                                              tabPanel("MAP for selected layers", leafletOutput("leaflet"))
                                              #tabPanel("Fuel wise trend", plotlyOutput("plot_facet")))
@@ -241,9 +241,9 @@ server <- function(input, output) {
     # Basic Map
     output$leaflet <- renderLeaflet({
         leaflet() %>%
-            # addTiles(urlTemplate = "http://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", attribution = "Google", group = "Google") %>%
+            addTiles(urlTemplate = "http://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", attribution = "Google", group = "Google") %>%
             # addTiles(group = "OSM (default)") %>%
-            addTiles() %>% 
+            # addTiles() %>% 
             addProviderTiles("Stamen.TonerLite", group = "Toner Lite") %>%
             addProviderTiles("Stamen.Toner", group = "Toner") %>%
             
@@ -256,16 +256,16 @@ server <- function(input, output) {
     
 
     
-    # Green Infrastructure Filtered data
+    # Filtered data
     observe({
         if (input$layer1 == TRUE){
-    # Replace layer with filtered greenInfrastructure
+    # Replace layer with filtered data
     observe({
         city_data <- cityInput()
         # Data is greenInf
         new_Data <- city_data[!is.na(city_data$latitude) & !is.na(city_data$latitude),]
         leafletProxy("leaflet", data = new_Data) %>%
-            addProviderTiles("CartoDB.DarkMatter") %>%
+            addProviderTiles("OpenStreetMap.HOT") %>%
             clearHeatmap() %>% 
             clearGroup(group = "new_Data") %>% 
             addHeatmap(lng = ~longitude, lat = ~latitude, radius = 8) %>% 
@@ -286,7 +286,7 @@ server <- function(input, output) {
     observe({
         if (input$layer2 == TRUE){
     observe({
-    pal311 <- colorFactor(c("blue", "red", "violet", "green"), c("ONLINE", "MOBILE", "PHONE", "UNKNOWN"))
+    pal311 <- colorFactor(c("#d73027", "#1a9850", "#CC79A7", "#D55E00"), c("ONLINE", "MOBILE", "PHONE", "UNKNOWN"))
     city_data <- cityInput()
     # Data is greenInf
     new_Data <- city_data[!is.na(city_data$latitude) & !is.na(city_data$latitude),]
@@ -295,11 +295,13 @@ server <- function(input, output) {
         clearGroup(group = "new_Data") %>% 
         clearMarkerClusters() %>% 
         clearMarkers() %>% 
+        
         addCircleMarkers(lng = ~longitude, lat = ~latitude, radius = 1.5, color = ~pal311(open_data_channel_type), clusterOptions = markerClusterOptions()) %>%
-        addLegend(position = "topright" , pal = pal311, values = dat311$open_data_channel_type)
+        addLegend(position = "topright" , pal = pal311, values = new_Data$open_data_channel_type,title = "Channel" )
     })
         } else{
             leafletProxy("leaflet", data = new_Data) %>% 
+                clearControls() %>% 
                 clearGroup(group = "new_Data") %>% 
                 clearMarkerClusters() %>% 
                 clearMarkers() %>% 
