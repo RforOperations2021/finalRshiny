@@ -241,14 +241,16 @@ server <- function(input, output) {
     # Basic Map
     output$leaflet <- renderLeaflet({
         leaflet() %>%
-            addTiles(urlTemplate = "http://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", attribution = "Google", group = "Google") %>%
+            # addTiles(urlTemplate = "http://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", attribution = "Google", group = "Google") %>%
             # addTiles(group = "OSM (default)") %>%
-            addProviderTiles("Stamen.Toner", group = "Toner") %>%
+            addTiles() %>% 
             addProviderTiles("Stamen.TonerLite", group = "Toner Lite") %>%
-            setView(-74.0060, 40.7128, 9) %>%
+            addProviderTiles("Stamen.Toner", group = "Toner") %>%
+            
+            setView(-73.95396, 40.80383, 9) %>%
             # Layers control
             addLayersControl(
-                baseGroups = c("Toner", "Toner Lite"),
+                baseGroups = c("Toner Lite", "Toner" ),
                 options = layersControlOptions(collapsed = FALSE))
     })
     
@@ -264,26 +266,45 @@ server <- function(input, output) {
         new_Data <- city_data[!is.na(city_data$latitude) & !is.na(city_data$latitude),]
         leafletProxy("leaflet", data = new_Data) %>%
             addProviderTiles("CartoDB.DarkMatter") %>%
+            clearHeatmap() %>% 
             clearGroup(group = "new_Data") %>% 
             addHeatmap(lng = ~longitude, lat = ~latitude, radius = 8) %>% 
             setView(lng = new_Data$longitude[1], lat = new_Data$latitude[1], zoom = 12)
         
-    })
+    }
+    )
+        }else{
+            leafletProxy("leaflet", data = new_Data) %>% 
+                clearGroup(group = "new_Data") %>% 
+                clearMarkerClusters() %>% 
+                clearMarkers() %>% 
+                clearHeatmap()
+            
         }
     })
-    
+    # "#d73027", "#1a9850", "#CC79A7", "#D55E00")
     observe({
         if (input$layer2 == TRUE){
     observe({
-    pal311 <- colorFactor(c("#d73027", "#1a9850", "#CC79A7", "#D55E00"), c("ONLINE", "MOBILE", "PHONE", "UNKNOWN"))
+    pal311 <- colorFactor(c("blue", "red", "violet", "green"), c("ONLINE", "MOBILE", "PHONE", "UNKNOWN"))
     city_data <- cityInput()
     # Data is greenInf
     new_Data <- city_data[!is.na(city_data$latitude) & !is.na(city_data$latitude),]
     leafletProxy("leaflet", data = new_Data) %>% 
             addProviderTiles("OpenStreetMap.HOT") %>%
+        clearGroup(group = "new_Data") %>% 
+        clearMarkerClusters() %>% 
+        clearMarkers() %>% 
         addCircleMarkers(lng = ~longitude, lat = ~latitude, radius = 1.5, color = ~pal311(open_data_channel_type), clusterOptions = markerClusterOptions()) %>%
-        addLegend(position = "topright" , pal = pal311, values = dat311$open_data_channel_type, title = "Channel Type")
+        addLegend(position = "topright" , pal = pal311, values = dat311$open_data_channel_type)
     })
+        } else{
+            leafletProxy("leaflet", data = new_Data) %>% 
+                clearGroup(group = "new_Data") %>% 
+                clearMarkerClusters() %>% 
+                clearMarkers() %>% 
+                clearHeatmap()
+                
         }
     })
 
@@ -306,7 +327,7 @@ server <- function(input, output) {
             geom_bar(postion= "dodge", stat="identity")+
             theme_bw()+
             theme(axis.text.x = element_text(angle = 60, hjust =1, vjust =1))+
-            xlab("City in CA") + ylab("Numbers of charging stations")
+            xlab("City in New York") + ylab("Numbers of Calls") + ggtitle("Top Selected Complaint Types")
         
 
     })
@@ -319,23 +340,22 @@ server <- function(input, output) {
         
         #plot bar plot for top 10 complaint type
         agency_data <- dat %>% 
-            group_by(open_data_channel_type, status) %>% 
+            group_by(open_data_channel_type) %>% 
             summarise(count = n())
         
         ggplot(agency_data, aes(x =  open_data_channel_type, y = count, fill = open_data_channel_type ))+
             geom_bar(postion= "dodge", stat="identity")+
             theme_bw()+
             theme(axis.text.x = element_text(angle = 60, hjust =1, vjust =1))+
-            xlab("Year") + ylab("Numbers of Electric Vehicles")+
-            ggtitle(paste("Year wise sales for", input$county))+
-            facet_wrap(.~status)
+            xlab("Channels through which Complaints came") + ylab("Numbers complaints")+
+            ggtitle(paste("Channel wise complaints for", input$city))
         
     })
     
     
     # Data table of chargers ----------------------------------------------
     output$table_311 <- DT::renderDataTable({
-        data_311
+        cityInput()
     })
     
     # charger level info box ----------------------------------------------
@@ -371,8 +391,8 @@ server <- function(input, output) {
     # Write sampled data as csv ---------------------------------------
     observeEvent(eventExpr = input$write_csv, 
                  handlerExpr = {
-                     filename <- paste0("Chargercounties", str_replace_all(Sys.time(), ":|\ ", "_"), ".csv")
-                     write.csv(data_311, file = filename, row.names = FALSE) 
+                     filename <- paste0("City311calls", str_replace_all(Sys.time(), ":|\ ", "_"), ".csv")
+                     write.csv(cityInput(), file = filename, row.names = FALSE) 
                  }
     )
 }
