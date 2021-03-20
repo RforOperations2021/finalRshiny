@@ -255,10 +255,21 @@ server <- function(input, output) {
             addProviderTiles("CartoDB.DarkMatter") %>%
             clearGroup(group = "new_Data") %>% 
             addHeatmap(lng = ~longitude, lat = ~latitude, radius = 8) %>% 
-            setView(lng = new_Data$longitude[1], lat = new_Data$latitude[1], zoom = 25)
+            setView(lng = new_Data$longitude[1], lat = new_Data$latitude[1], zoom = 12)
         
     })
     
+    
+    observe({
+    pal311 <- colorFactor(c("#d73027", "#1a9850", "#CC79A7", "#D55E00"), c("ONLINE", "MOBILE", "PHONE", "UNKNOWN"))
+    city_data <- cityInput()
+    # Data is greenInf
+    new_Data <- city_data[!is.na(city_data$latitude) & !is.na(city_data$latitude),]
+    leafletProxy("leaflet", data = new_Data) %>% 
+            addProviderTiles("OpenStreetMap.HOT") %>%
+        addCircleMarkers(lng = ~longitude, lat = ~latitude, radius = 1.5, color = ~pal311(open_data_channel_type), clusterOptions = markerClusterOptions()) %>%
+        addLegend(position = "topright" , pal = pal311, values = dat311$open_data_channel_type, title = "Channel Type")
+    })
     # # Borough Filter
     # boroInputs <- reactive({
     #     boros <- subset(boros.load, boro_name == input$boroSelect)
