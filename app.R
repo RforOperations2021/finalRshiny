@@ -12,11 +12,11 @@
 
 #----------------------------------------------------------------------
 
-#Shiny app gives a high level view for the status of ELectric Vehicles and its associated infrastructure in CA
-#Number of datasets = 3
-#Number of Plots = 6
-#Number of Menu items = 4
-#Number of tabs = 6
+#Shiny app gives a SNAPSHOT for distress calls in New YOrk State
+#Number of datasets = 1
+#Number of Plots = 2
+#Number of Maps = 2
+#Number of tabs = 4
 #Number of inputs = 5
 #Info boxes = 3
 #Data table = 1
@@ -32,29 +32,36 @@ library(plotly)
 library(shinythemes)
 library(dashboardthemes)
 library(lubridate)
-
 library(rgdal)
 library(leaflet)
 library(leaflet.extras)
-
 library(dplyr)
 library(readxl)
 library(stringr)
 
-# Load and clean data ----------------------------------------------
+# Load and clean data from API----------------------------------------------
 data_311 <- fromJSON("https://data.cityofnewyork.us/resource/erm2-nwe9.json")
 
+#identify the columns
 data_311 <- data_311[,c("city", "park_borough", "latitude", "longitude", "created_date", "agency",
                         "agency_name", "descriptor", "open_data_channel_type", "incident_zip", "status",
                         "complaint_type", "location_type")]
 
+#convert char to date
 data_311$date <- as.Date(data_311$created_date)
+
+#calculate if its today
 data_311$is.today <- today() - as.Date(data_311$created_date)
 data_311$year <- year(data_311$date)
+
+#convert longitude and latitudes to numeric
 data_311$latitude <- as.numeric(data_311$latitude)
 data_311$longitude <- as.numeric(data_311$longitude)
 
+#total cities
 cities <- unique(data_311$city)
+
+#total agencies
 agencies <- unique(data_311$agency_name)
 
 
@@ -77,7 +84,7 @@ header <- dashboardHeader(title = "311 Calls in New York State",
                           dropdownMenu(type = "messages",
                                        messageItem(
                                            from = "Arun",
-                                           message = HTML("311 here <br> Go Green!."),
+                                           message = HTML("311 here <br> be Safe!."),
                                            icon = icon("exclamation-circle"))
                           )
 )
@@ -103,15 +110,15 @@ sidebar <- dashboardSidebar(
                     "Select City to get Top 311 Complaints:",
                     choices = cities,
                     multiple = FALSE,
-                    #selectize = TRUE,
+                    selectize = TRUE,
                     selected = "NEW YORK"),
         
         #input: Fuel type wise vehicles sold
         selectInput("agency_select",
-                    "Select Agency to Track Incoming Channels",
+                    "Select Agency",
                     choices = agencies,
                     multiple = FALSE,
-                    #selectize = TRUE,
+                    selectize = TRUE,
                     selected = "Department of Health and Mental Hygiene"),
         
         # top x Selection ----------------------------------------------
@@ -143,8 +150,9 @@ body <- dashboardBody(shinyDashboardThemes(theme = "blue_gradient"), # add blue_
                       # Input and Value Boxes ----------------------------------------------
                       fluidRow(
                           infoBoxOutput("TotalCalls"),
-                          infoBoxOutput("TodayCalls"),
-                          valueBoxOutput("YesterdayCalls")
+                          valueBoxOutput("YesterdayCalls"),
+                          infoBoxOutput("TodayCalls")
+                          
                       ),
                       tabItems(
                           # Plot page ----------------------------------------------
@@ -153,7 +161,7 @@ body <- dashboardBody(shinyDashboardThemes(theme = "blue_gradient"), # add blue_
                                   fluidRow(
                                       tabBox(title = "City Wise calls: Status across NY",
                                              width = 15,
-                                             tabPanel("Complaints for City", plotlyOutput("plot_city"))
+                                             tabPanel("Top Complaints for City", plotlyOutput("plot_city"))
                                              #tabPanel("Inequity within charger distribution", plotlyOutput("plot_char")))
                                   ))
                           ),
@@ -161,16 +169,16 @@ body <- dashboardBody(shinyDashboardThemes(theme = "blue_gradient"), # add blue_
                           # Data Table Page ----------------------------------------------
                           tabItem("table_311",
                                   fluidPage(
-                                      box(title = "List of level-wise Chargers", DT::dataTableOutput("table_311"), width = 12))
+                                      box(title = "Call details for the selected city", DT::dataTableOutput("table_311"), width = 12))
                           ),
                           
                           ## tab item new vehicle
                           tabItem("deptchannel",
                                   # Plot ----------------------------------------------
                                   fluidRow(
-                                      tabBox(title = "Fueltype wise Total Vehicle Population",
+                                      tabBox(title = "Department wise open channels",
                                              width = 15,
-                                             tabPanel("Yearly trend for vehicles", plotlyOutput("plot_dept"))
+                                             tabPanel("Channel wise", plotlyOutput("plot_dept"))
                                              #tabPanel("Fuel wise trend", plotlyOutput("plot_facet")))
                                   ))
                           ),
@@ -178,9 +186,9 @@ body <- dashboardBody(shinyDashboardThemes(theme = "blue_gradient"), # add blue_
                           tabItem("map",
                                   # Plot ----------------------------------------------
                                   fluidRow(
-                                      tabBox(title = "Fueltype wise Total Vehicle Population",
+                                      tabBox(title = "Heat Map for calls for selected City",
                                              width = 15,
-                                             tabPanel("Yearly trend for vehicles", leafletOutput("leaflet"))
+                                             tabPanel("MAP for selected layers", leafletOutput("leaflet"))
                                              #tabPanel("Fuel wise trend", plotlyOutput("plot_facet")))
                                      
                                          #     # Using Shiny JS
@@ -240,7 +248,7 @@ server <- function(input, output) {
             setView(-74.0060, 40.7128, 9) %>%
             # Layers control
             addLayersControl(
-                baseGroups = c( "Toner", "Toner Lite"),
+                baseGroups = c("Toner", "Toner Lite"),
                 options = layersControlOptions(collapsed = FALSE))
     })
     
@@ -278,23 +286,7 @@ server <- function(input, output) {
     })
         }
     })
-    # # Borough Filter
-    # boroInputs <- reactive({
-    #     boros <- subset(boros.load, boro_name == input$boroSelect)
-    #     
-    #     return(boros)
-    # })
-    # 
-    # observe({
-    #     boros <- boroInputs()
-    #     
-    #     leafletProxy("leaflet", data = boros) %>%
-    #         # In this case either lines 107 or 108 will work
-    #         # clearShapes() %>%
-    #         clearGroup(group = "boros") %>%
-    #         addPolygons(popup = ~paste0("<b>", boro_name, "</b>"), group = "boros", layerId = ~boro_code, fill = FALSE, color = "green") %>%
-    #         setView(lng = boros$x[1], lat = boros$y[1], zoom = 9)
-    # })
+
     
     # A plot showing the chargers with city for top selected -----------------------------
     output$plot_city <- renderPlotly({
@@ -335,7 +327,8 @@ server <- function(input, output) {
             theme_bw()+
             theme(axis.text.x = element_text(angle = 60, hjust =1, vjust =1))+
             xlab("Year") + ylab("Numbers of Electric Vehicles")+
-            ggtitle(paste("Year wise sales for", input$county))
+            ggtitle(paste("Year wise sales for", input$county))+
+            facet_wrap(.~status)
         
     })
     
@@ -347,33 +340,39 @@ server <- function(input, output) {
     
     # charger level info box ----------------------------------------------
     output$TotalCalls <- renderInfoBox({
-        num <- nrow(data_311)
+        dat <- cityInput()
+        num <- nrow(dat)
         # num <- round(sum(sw[,input$chargeLevel], na.rm = T), 2)
         
-        infoBox("Chargers", value = num, subtitle = paste("Charger Type:", input$city), icon = icon("battery-half"), color = "purple")
+        infoBox("Total Calls", value = num, subtitle = paste0("City:", input$city), icon = icon("phone"), color = "purple")
+    })
+    # vehicle population for fuel type value box ----------------------------------------------
+    output$YesterdayCalls<- renderValueBox({
+        dat <- cityInput()
+        dat <- dat[dat$is.today == 1,]
+        num <- nrow(dat)
+        # num <- sum(sw$vehicles_population, na.rm = T)
+        
+        valueBox(subtitle = paste0("Yesterday's Calls:", input$city), value = num, icon = icon("person-booth"))
     })
     
     # Sales per county level info box ----------------------------------------------
     output$TodayCalls <- renderInfoBox({
-        num <- nrow(data_311)
+        dat <- cityInput()
+        dat <- dat[dat$is.today == 0,]
+        num <- nrow(dat)
         # num <- sum(sw$total_sales , na.rm = T)
         
-        infoBox("EV vehicles", value = num, subtitle = paste("County:", input$city), icon = icon("car"), color = "purple")
+        infoBox("Today's Calls", value = num, subtitle = paste0("City:", input$city), icon = icon("daily-motion"), color = "purple")
     })
     
-    # vehicle population for fuel type value box ----------------------------------------------
-    output$YesterdayCalls<- renderValueBox({
-        num <- nrow(data_311)
-        # num <- sum(sw$vehicles_population, na.rm = T)
-        
-        valueBox(subtitle = paste("Vehicles by Fuel Type in CA:", input$city), value = num, icon = icon("truck"))
-    })
+  
     
     # Write sampled data as csv ---------------------------------------
     observeEvent(eventExpr = input$write_csv, 
                  handlerExpr = {
                      filename <- paste0("Chargercounties", str_replace_all(Sys.time(), ":|\ ", "_"), ".csv")
-                     write.csv(data311, file = filename, row.names = FALSE) 
+                     write.csv(data_311, file = filename, row.names = FALSE) 
                  }
     )
 }
