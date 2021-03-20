@@ -41,8 +41,8 @@ library(stringr)
 library(jsonlite)
 
 # Load and clean data from API----------------------------------------------
-# data_311 <- fromJSON("https://data.cityofnewyork.us/resource/erm2-nwe9.json")
-data_311 <- read.csv("data_311.csv")
+data_311 <- fromJSON("https://data.cityofnewyork.us/resource/erm2-nwe9.json")
+# data_311 <- read.csv("data_311.csv")
 #identify the columns
 data_311 <- data_311[,c("city", "park_borough", "latitude", "longitude", "created_date", "agency",
                         "agency_name", "descriptor", "open_data_channel_type", "incident_zip", "status",
@@ -275,6 +275,9 @@ server <- function(input, output) {
     }
     )
         }else{
+            city_data <- cityInput()
+            # Data is greenInf
+            new_Data <- city_data[!is.na(city_data$latitude) & !is.na(city_data$latitude),]
             leafletProxy("leaflet", data = new_Data) %>% 
                 clearGroup(group = "new_Data") %>% 
                 clearMarkerClusters() %>% 
@@ -301,6 +304,9 @@ server <- function(input, output) {
         addLegend(position = "topright" , pal = pal311, values = new_Data$open_data_channel_type,title = "Channel" )
     })
         } else{
+            city_data <- cityInput()
+            # Data is greenInf
+            new_Data <- city_data[!is.na(city_data$latitude) & !is.na(city_data$latitude),]
             leafletProxy("leaflet", data = new_Data) %>% 
                 clearControls() %>% 
                 clearGroup(group = "new_Data") %>% 
