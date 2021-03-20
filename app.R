@@ -38,10 +38,11 @@ library(leaflet.extras)
 library(dplyr)
 library(readxl)
 library(stringr)
+library(jsonlite)
 
 # Load and clean data from API----------------------------------------------
-data_311 <- fromJSON("https://data.cityofnewyork.us/resource/erm2-nwe9.json")
-
+# data_311 <- fromJSON("https://data.cityofnewyork.us/resource/erm2-nwe9.json")
+data_311 <- read.csv("data_311.csv")
 #identify the columns
 data_311 <- data_311[,c("city", "park_borough", "latitude", "longitude", "created_date", "agency",
                         "agency_name", "descriptor", "open_data_channel_type", "incident_zip", "status",

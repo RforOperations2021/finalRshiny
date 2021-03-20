@@ -1,0 +1,13 @@
+name: finalRshiny
+title: finalRshiny
+username:
+account: aruns
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3823823
+bundleId: 4371036
+url: https://aruns.shinyapps.io/finalRshiny/
+when: 1616209373.17128
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: 311data.csv
