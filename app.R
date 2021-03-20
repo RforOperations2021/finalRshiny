@@ -145,7 +145,7 @@ sidebar <- dashboardSidebar(
 
 
 # Dashboard body ----------------------------------------------
-body <- dashboardBody(shinyDashboardThemes(theme = "blue_gradient"), # add blue_gradient theme
+body <- dashboardBody(shinyDashboardThemes(theme = "purple_gradient"), # add blue_gradient theme
                       
                       
                       # Input and Value Boxes ----------------------------------------------
