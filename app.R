@@ -121,6 +121,8 @@ sidebar <- dashboardSidebar(
                     max = 25,
                     value = 5,
                     step = 1), 
+        checkboxInput("layer1", "Layer1", value = FALSE, width = NULL),
+        checkboxInput("layer2", "Layer2", value = FALSE, width = NULL),
         
         br(),
         br(),
@@ -238,14 +240,15 @@ server <- function(input, output) {
             setView(-74.0060, 40.7128, 9) %>%
             # Layers control
             addLayersControl(
-                baseGroups = c("OSM (default)", "Toner", "Toner Lite"),
+                baseGroups = c( "Toner", "Toner Lite"),
                 options = layersControlOptions(collapsed = FALSE))
     })
     
 
     
     # Green Infrastructure Filtered data
-
+    observe({
+        if (input$layer1 == TRUE){
     # Replace layer with filtered greenInfrastructure
     observe({
         city_data <- cityInput()
@@ -258,8 +261,11 @@ server <- function(input, output) {
             setView(lng = new_Data$longitude[1], lat = new_Data$latitude[1], zoom = 12)
         
     })
+        }
+    })
     
-    
+    observe({
+        if (input$layer2 == TRUE){
     observe({
     pal311 <- colorFactor(c("#d73027", "#1a9850", "#CC79A7", "#D55E00"), c("ONLINE", "MOBILE", "PHONE", "UNKNOWN"))
     city_data <- cityInput()
@@ -269,6 +275,8 @@ server <- function(input, output) {
             addProviderTiles("OpenStreetMap.HOT") %>%
         addCircleMarkers(lng = ~longitude, lat = ~latitude, radius = 1.5, color = ~pal311(open_data_channel_type), clusterOptions = markerClusterOptions()) %>%
         addLegend(position = "topright" , pal = pal311, values = dat311$open_data_channel_type, title = "Channel Type")
+    })
+        }
     })
     # # Borough Filter
     # boroInputs <- reactive({
